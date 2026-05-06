@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Plano de Trabalho</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Gerador de Plano de Trabalho</h1>
+        <form method="POST">
+            <section>
+                <h2>DADOS GERAIS</h2>
+                <div class="form-group">
+                    <label>Nome do órgão:</label>
+                    <input type="text" name="orgao" required placeholder="Ex: Prefeitura de São Paulo">
+                </div>
+                <div class="form-group">
+                    <label>Nome do cliente:</label>
+                    <input type="text" name="cliente" required placeholder="Ex: João Silva">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de órgão:</label>
+                    <select name="tipo_orgao">
+                        <option value="Prefeitura">Prefeitura</option>
+                        <option value="Câmara">Câmara</option>
+                        <option value="Autarquia">Autarquia</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+            </section>
+
+            <section>
+                <h2>CRONOGRAMA</h2>
+                <div id="cronograma-container">
+                    <div class="cronograma-item">
+                        <input type="text" name="cron_data[]" placeholder="Data (Ex: DIA XX/XX)" required>
+                        <input type="text" name="cron_desc[]" placeholder="Descrição da etapa" required>
+                    </div>
+                </div>
+                <button type="button" id="add-etapa" class="btn-secondary">+ Adicionar Etapa</button>
+            </section>
+
+            <div class="plans-container">
+                <section class="plan-box">
+                    <h2>PLANO BÁSICO</h2>
+                    <div class="form-group">
+                        <label>Número de usuários:</label>
+                        <input type="number" name="basico_usuarios" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor anual (R$):</label>
+                        <input type="text" name="basico_valor" placeholder="Ex: 32.747,00" required>
+                    </div>
+                </section>
+
+                <section class="plan-box">
+                    <h2>PLANO PERSONALIZADO</h2>
+                    <div class="form-group">
+                        <label>Número de usuários:</label>
+                        <input type="text" name="perso_usuarios" placeholder="Ex: 5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor anual (R$):</label>
+                        <input type="text" name="perso_valor" placeholder="Ex: Sob consulta" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Diferenciais:</label>
+                        <textarea name="perso_diferenciais" rows="4" placeholder="Descreva os diferenciais deste plano..."></textarea>
+                    </div>
+                </section>
+            </div>
+
+            <div class="actions">
+                <button type="submit" name="visualizar" class="btn-view">Visualizar PDF</button>
+                <button type="submit" name="baixar" class="btn-download">Gerar e Baixar PDF</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('add-etapa').addEventListener('click', function() {
+            const container = document.getElementById('cronograma-container');
+            const newItem = document.createElement('div');
+            newItem.className = 'cronograma-item';
+            newItem.innerHTML = `
+                <input type="text" name="cron_data[]" placeholder="Data (Ex: DIA XX/XX)" required>
+                <input type="text" name="cron_desc[]" placeholder="Descrição da etapa" required>
+                <button type="button" class="btn-remove" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(newItem);
+        });
+    </script>
+</body>
+</html>
