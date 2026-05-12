@@ -46,7 +46,6 @@ def add_background(canvas, doc):
 
 def generate_pdf(data):
     buffer = io.BytesIO()
-    # Margens ajustadas: topMargin reduzida para subir o título
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=A4, 
@@ -57,7 +56,6 @@ def generate_pdf(data):
     )
     styles = getSampleStyleSheet()
     
-    # Estilos customizados
     title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], alignment=1, spaceAfter=20, fontSize=20, textColor=colors.HexColor('#1a237e'), leading=24)
     heading_style = ParagraphStyle('HeadingStyle', parent=styles['Heading2'], spaceBefore=15, spaceAfter=10, fontSize=16, textColor=colors.HexColor('#1a237e'))
     normal_style = ParagraphStyle('NormalStyle', parent=styles['Normal'], fontSize=12, leading=16, alignment=4)
@@ -65,23 +63,15 @@ def generate_pdf(data):
     elements = []
 
     # --- PÁGINA 1 ---
-    # Título (Subido)
     elements.append(Spacer(1, 0.5*cm))
     elements.append(Paragraph(f"PLANO DE TRABALHO PARA {data['orgao'].upper()}", title_style))
-    
-    # Introdução
     elements.append(Paragraph("Introdução", heading_style))
     elements.append(Paragraph(INTRODUCAO_TEXTO, normal_style))
-    
-    # Cronograma (Embelezado)
     elements.append(Paragraph("CRONOGRAMA", heading_style))
     elements.append(Spacer(1, 0.5*cm))
     
     for i, etapa in enumerate(data['cronograma']):
-        # Ícone de círculo preenchido para todas as etapas
         icon = "●"
-        
-        # Tabela para cada item do cronograma com linha vertical simulada
         item_table = Table([
             [Paragraph(f"<font size=18 color='#7cb342'>{icon}</font>", ParagraphStyle('Bullet', alignment=1)), 
              Paragraph(f"<b>{etapa['data']}</b>", normal_style), 
@@ -91,59 +81,78 @@ def generate_pdf(data):
         item_table.setStyle(TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
-            # Adiciona uma linha vertical entre os ícones (exceto no último)
-            ('LINEBEFORE', (0, 0), (0, 0), 1, colors.HexColor('#7cb342')) if i < len(data['cronograma']) - 1 else ('LINEBEFORE', (0, 0), (0, 0), 0, colors.white),
         ]))
-        # Nota: O ReportLab não desenha linhas verticais facilmente entre tabelas separadas, 
-        # mas o espaçamento e o ícone maior já dão um visual muito superior.
         elements.append(item_table)
 
     elements.append(PageBreak())
 
     # --- PÁGINA 2 ---
     elements.append(Spacer(1, 0.5*cm))
-    # Título da seção maior
     elements.append(Paragraph("Cenários para contratação do Govplan:", ParagraphStyle('CenTitle', parent=heading_style, fontSize=18)))
     elements.append(Spacer(1, 0.5*cm))
     
-    # Tabela de Cenários (Aumentada)
-    col_width = 8.5*cm
+    # Lógica para verificar se o plano personalizado deve ser exibido
+    has_perso = data['perso_usuarios'] and data['perso_valor']
     
-    # Cabeçalho
-    header_table = Table([
-        [Paragraph("<b>PLANO BÁSICO</b>", ParagraphStyle('Header', alignment=1, textColor=colors.white, fontSize=14)), 
-         Paragraph("<b>VALOR PERSONALIZADO</b>", ParagraphStyle('Header', alignment=1, textColor=colors.white, fontSize=14))]
-    ], colWidths=[col_width, col_width])
-    
-    header_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, 0), colors.HexColor('#1a237e')),
-        ('BACKGROUND', (1, 0), (1, 0), colors.HexColor('#7cb342')),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
-        ('TOPPADDING', (0, 0), (-1, -1), 15),
-    ]))
-    elements.append(header_table)
+    if has_perso:
+        # Layout com dois planos (Lado a Lado)
+        col_width = 8.5*cm
+        
+        header_table = Table([
+            [Paragraph("<b>PLANO BÁSICO</b>", ParagraphStyle('Header', alignment=1, textColor=colors.white, fontSize=14)), 
+             Paragraph("<b>VALOR PERSONALIZADO</b>", ParagraphStyle('Header', alignment=1, textColor=colors.white, fontSize=14))]
+        ], colWidths=[col_width, col_width])
+        
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, 0), colors.HexColor('#1a237e')),
+            ('BACKGROUND', (1, 0), (1, 0), colors.HexColor('#7cb342')),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(header_table)
 
-    # Conteúdo (Aumentado e com mais espaçamento)
-    cenarios_content = [
-        [Paragraph(f"<b>Usuários:</b> {data['basico_usuarios']} usuário", normal_style), 
-         Paragraph(f"<b>Usuários:</b> {data['perso_usuarios']} usuários", normal_style)],
+        cenarios_content = [
+            [Paragraph(f"<b>Usuários:</b> {data['basico_usuarios']} usuário", normal_style), 
+             Paragraph(f"<b>Usuários:</b> {data['perso_usuarios']} usuários", normal_style)],
+            [Paragraph(f"<b>Valor anual:</b> R$ {data['basico_valor']}", normal_style), 
+             Paragraph(f"<b>Valor anual:</b> {data['perso_valor']}", normal_style)],
+            [Paragraph("<b>O que contempla:</b><br/>" + CONTEMPLA_TEXTO, ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13)), 
+             Paragraph("<b>O que contempla:</b><br/>" + CONTEMPLA_TEXTO, ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13))],
+            [Paragraph(f"<b>Diferenciais:</b><br/>N/A", ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13)), 
+             Paragraph(f"<b>Diferenciais:</b><br/>{data['perso_diferenciais']}", ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13))],
+            [Paragraph(f"<b>Indicado para:</b> {INDICADO_BASICO}", ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13)), 
+             Paragraph(f"<b>Indicado para:</b> {INDICADO_PERSONALIZADO}", ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13))]
+        ]
         
-        [Paragraph(f"<b>Valor anual:</b> R$ {data['basico_valor']}", normal_style), 
-         Paragraph(f"<b>Valor anual:</b> {data['perso_valor']}", normal_style)],
+        content_table = Table(cenarios_content, colWidths=[col_width, col_width])
+    else:
+        # Layout com apenas o Plano Básico (Largura Total)
+        col_width = 17*cm
         
-        [Paragraph("<b>O que contempla:</b><br/>" + CONTEMPLA_TEXTO, ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13)), 
-         Paragraph("<b>O que contempla:</b><br/>" + CONTEMPLA_TEXTO, ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13))],
+        header_table = Table([
+            [Paragraph("<b>PLANO BÁSICO</b>", ParagraphStyle('Header', alignment=1, textColor=colors.white, fontSize=14))]
+        ], colWidths=[col_width])
         
-        [Paragraph(f"<b>Diferenciais:</b><br/>N/A", ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13)), 
-         Paragraph(f"<b>Diferenciais:</b><br/>{data['perso_diferenciais']}", ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13))],
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, 0), colors.HexColor('#1a237e')),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(header_table)
+
+        cenarios_content = [
+            [Paragraph(f"<b>Usuários:</b> {data['basico_usuarios']} usuário", normal_style)],
+            [Paragraph(f"<b>Valor anual:</b> R$ {data['basico_valor']}", normal_style)],
+            [Paragraph("<b>O que contempla:</b><br/>" + CONTEMPLA_TEXTO, ParagraphStyle('Small', parent=normal_style, fontSize=11, leading=14))],
+            [Paragraph(f"<b>Indicado para:</b> {INDICADO_BASICO}", ParagraphStyle('Small', parent=normal_style, fontSize=11, leading=14))]
+        ]
         
-        [Paragraph(f"<b>Indicado para:</b> {INDICADO_BASICO}", ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13)), 
-         Paragraph(f"<b>Indicado para:</b> {INDICADO_PERSONALIZADO}", ParagraphStyle('Small', parent=normal_style, fontSize=10, leading=13))]
-    ]
-    
-    content_table = Table(cenarios_content, colWidths=[col_width, col_width])
+        content_table = Table(cenarios_content, colWidths=[col_width])
+
     content_table.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
